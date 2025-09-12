@@ -8,4 +8,7 @@ pdf2image==1.17.0
 langdetect==1.0.9
 translate==3.6.1
 PyMuPDF==1.24.9
+<<<<<<< HEAD
 
+=======
+>>>>>>> 21e9f95 (Optimicé Dockerfile y requirements.txt para Render)
