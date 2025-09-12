@@ -136,9 +136,36 @@ def procesar_pdfs(lista_pdfs):
     frases_unicas = {tag: desc for tag, desc in frases_total}
     frases_finales = seleccionar_importantes(list(frases_unicas.items()), max_items=3)
 
-    pictos_unicos = list(set(pictos_total))[:2]
+    PICTO_PRIORITY = {
+         "GHS01": 1,
+         "GHS02": 1,
+         "GHS03": 1,
+         "GHS04": 1,
+
+         "GHS06": 2,
+         "GHS08": 2,
+         "GHS05": 2,
+
+         "GHS07": 3,
+
+         "GHS09": 4
+    }
+
+
+    pictos_unicos = list(set(pictos_total))
+
+
+    pictos_ordenados = sorted(
+        pictos_unicos,
+        key=lambda x: PICTO_PRIORITY.get(x, 99)
+    )
+
+
+    pictos_finales = pictos_ordenados[:2]
+
+
 
     return {
         "frases": [f"{tag}: {desc}" for tag, desc in frases_finales],
-        "pictogramas": pictos_unicos
+        "pictogramas": pictos_finales
     }
