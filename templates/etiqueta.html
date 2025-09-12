@@ -69,11 +69,14 @@
   </div>
 
   <div class="text-center mt-3">
-    <button class="btn btn-success" onclick="descargarJPG()">Descargar JPG</button>
+    <button class="btn btn-danger" onclick="descargarPDF()">Descargar PDF</button>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
+    const { jsPDF } = window.jspdf;
+
     const ghsToFile = {
       "GHS01": "bomba.png",
       "GHS02": "inflamable.png",
@@ -118,7 +121,7 @@
 
     preview.innerHTML = construirEtiqueta();
 
-    async function descargarJPG() {
+    async function descargarPDF() {
       const cantidad = parseInt(document.getElementById("cantidad").value) || 1;
       const etiquetaOriginal = document.getElementById("preview").firstElementChild;
       if (!etiquetaOriginal) {
@@ -126,23 +129,41 @@
         return;
       }
 
-      const tempDiv = document.createElement("div");
-      tempDiv.style.position = "absolute";
-      tempDiv.style.top = "-9999px";
-      document.body.appendChild(tempDiv);
+      
+      const canvas = await html2canvas(etiquetaOriginal, { scale: 3, useCORS: true });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "pt", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+
+      const etiquetaWidth = 250;
+      const etiquetaHeight = 160;
+      const margin = 20;
+
+      let x = margin;
+      let y = margin;
 
       for (let i = 0; i < cantidad; i++) {
-        const copia = etiquetaOriginal.cloneNode(true);
-        tempDiv.appendChild(copia);
+
+        if (x + etiquetaWidth > pageWidth - margin) {
+          x = margin;
+          y += etiquetaHeight + 15;
+        }
+        if (y + etiquetaHeight > pageHeight - margin) {
+          pdf.addPage();
+          x = margin;
+          y = margin;
+        }
+
+        pdf.addImage(imgData, "PNG", x, y, etiquetaWidth, etiquetaHeight);
+
+
+        x += etiquetaWidth + 15;
       }
 
-      const canvas = await html2canvas(tempDiv, { scale: 3, useCORS: true, allowTaint: false });
-      const link = document.createElement("a");
-      link.download = "etiquetas.jpg";
-      link.href = canvas.toDataURL("image/jpeg", 1.0);
-      link.click();
-
-      document.body.removeChild(tempDiv);
+      pdf.save("etiquetas.pdf");
     }
   </script>
 </body>
