@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Label</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: url("https://images.pexels.com/photos/9243554/pexels-photo-9243554.jpeg") no-repeat center center fixed;
+      background-size: cover;
+    }
+    .container-form {
+      max-width: 800px;
+      margin: 40px auto;
+      background: rgba(255,255,255,0.9);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    h2 { font-weight: 700; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+  <div class="container-form">
+    <h2 class="text-center">SafeLabel</h2>
+    <form id="pdfForm" class="row g-3" enctype="multipart/form-data">
+
+      <div class="col-md-6">
+        <label for="empresa" class="form-label">Nombre de la Empresa</label>
+        <input type="text" class="form-control" id="empresa" required>
+      </div>
+
+      <div class="col-md-6">
+        <label for="telefono" class="form-label">Teléfono de la Empresa</label>
+        <input type="tel" class="form-control" id="telefono" required>
+      </div>
+
+      <div class="col-md-6">
+        <label for="analista" class="form-label">Nombre del Analista</label>
+        <input type="text" class="form-control" id="analista" required>
+      </div>
+
+      <div class="col-md-6">
+        <label for="reactivo" class="form-label">Reactivo</label>
+        <input type="text" class="form-control" id="reactivo" required>
+      </div>
+
+      <div class="col-12">
+        <label for="preparacion" class="form-label">Preparación</label>
+        <textarea class="form-control" id="preparacion" rows="3" required></textarea>
+      </div>
+
+      <div class="col-md-6">
+        <label for="concentracion" class="form-label">Concentración</label>
+        <input type="text" class="form-control" id="concentracion" required>
+      </div>
+
+      <div class="col-md-6">
+        <label for="fecha" class="form-label">Fecha de Preparación</label>
+        <input type="date" class="form-control" id="fecha" required>
+      </div>
+
+      <div class="col-md-6">
+        <label for="tiempo" class="form-label">Tiempo de Caducidad</label>
+        <div class="input-group">
+          <input type="number" class="form-control" id="tiempo" min="1" required>
+          <select class="form-select" id="unidad">
+            <option value="dias">Días</option>
+            <option value="meses">Meses</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label for="documentos" class="form-label">Cargar Documentos (PDF)</label>
+        <input type="file" class="form-control" id="documentos" name="files" accept="application/pdf" multiple>
+      </div>
+
+      <div class="col-12 text-center">
+        <button type="submit" class="btn btn-warning"><i class="bi bi-send-fill"></i> Procesar</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+  function calcularVencimiento(fechaPrep, tiempo, unidad) {
+    if (!fechaPrep || !tiempo) return "";
+    const fecha = new Date(fechaPrep);
+    if (unidad === "dias") {
+      fecha.setDate(fecha.getDate() + parseInt(tiempo));
+    } else if (unidad === "meses") {
+      fecha.setMonth(fecha.getMonth() + parseInt(tiempo));
+    }
+    return fecha.toISOString().split("T")[0]; // formato YYYY-MM-DD
+  }
+
+  document.getElementById("pdfForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const fechaPrep = document.getElementById("fecha").value;
+    const tiempo = document.getElementById("tiempo").value;
+    const unidad = document.getElementById("unidad").value;
+    const fechaVenc = calcularVencimiento(fechaPrep, tiempo, unidad);
+
+    const formData = new FormData();
+    const files = document.getElementById("documentos").files;
+    for (let i = 0; i < files.length; i++) {
+      formData.append("files", files[i]);
+    }
+
+    // 🔹 Ahora la ruta es relativa: funciona en local y en Render
+    const res = await fetch("/procesar/", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) {
+      alert("Error al procesar los archivos");
+      return;
+    }
+
+    const data = await res.json();
+
+    // Guardar datos en localStorage y redirigir
+    localStorage.setItem("datosEtiqueta", JSON.stringify({
+      empresa: document.getElementById("empresa").value,
+      telefono: document.getElementById("telefono").value,
+      analista: document.getElementById("analista").value,
+      reactivo: document.getElementById("reactivo").value,
+      preparacion: document.getElementById("preparacion").value,
+      concentracion: document.getElementById("concentracion").value,
+      fechaPrep,
+      fechaVenc,
+      frases: data.frases,
+      pictogramas: data.pictogramas
+    }));
+
+    // Redirigir a la vista de etiquetas
+    window.location.href = "/etiqueta";
+  });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
